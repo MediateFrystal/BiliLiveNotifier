@@ -1,9 +1,11 @@
-# BiliLiveSendToMail
+# BiliLiveNotifier
 哔哩哔哩直播消息发送到邮箱
 
-使用方法：
+原项目是 [FireworkRocket/BiliLiveSendToMail](https://github.com/FireworkRocket/BiliLiveSendToMail)，我修改了以满足自己的需求
 
-用Java22在首次运行后会创建一个配置文件：
+## 使用方法
+
+用Java在首次运行后会创建一个配置文件：
 
 ```
 # Configuration file example
@@ -17,51 +19,35 @@ smtpHost=<smtpHost>
 smtpPort=<smtpPort>
 smtpUsername=<smtpUsername>
 smtpPassword=<smtpPassword>
-imapHost=<imapHost>
-imapPort=<imapPort>
-imapUsername=<imapUsername>
-imapPassword=<imapPassword>
-checkTimeHour=0
-checkTimeMinute=0
-checkTimeSed=0
 retryIntervalSeconds=10
-Unsubscribe=True
-CheckEmailRepliesTime=1
-SaveDeletedEmail=False
+userInputTimeoutSeconds=10
+sendTestMailOnStartup=true
 apiUrl=https://api.live.bilibili.com/room/v1/Room/get_info?room_id=
 ```
 
-按照提示填写即可
-翻译对照：
+### 翻译对照
 
 ```
 LiveIDs=填写你要监听的主播，如有多个，用英文的逗号分隔
-EmailList=填写你要就收推送的邮箱，如有多个，用英文的逗号分隔
+EmailList=填写你要接受推送的邮箱，如有多个，用英文的逗号分隔
 smtpHost=SMTP服务器
-smtpPort=SMPT端口
-smtpUsername=SMPT用户名
+smtpPort=SMTP端口
+smtpUsername=SMTP用户名
 smtpPassword=SMTP密码
-imapHost=IMAP服务器
-imapPort=IMAP端口
-imapUsername=IMAP用户名
-imapPassword=IMAP密码
-checkTimeHour=定时任务，执行完这次推送后多久再检测（小时）
-checkTimeMinute=定时任务，执行完这次推送后多久再检测（分钟）
-checkTimeSed=定时任务，执行完这次推送后多久再检测（秒）
 retryIntervalSeconds=检测到未开播时多久再重试（秒）
-Unsubscribe=开启退订功能
-CheckEmailRepliesTime=多久检查一次是否有新的退订用户
-SaveDeletedEmail=是否记录退订的用户（布尔值）
-apiUrl=最好不要改
+userInputTimeoutSeconds=检测到开播后手动跳过发送邮件的超时时长（秒）
+sendTestMailOnStartup=启动时发送一封测试邮件
+apiUrl=哔哩哔哩直播API
 ```
-
-注意SMTP和IMAP的区分，两种协议并不一样，填写时需要注意， 填写完成后重新运行即可
 
 Linux后台运行命令：
 `
-nohup <命令> &
+nohup java -jar .\BiliLiveNotifier.jar &
 `
 
 Windows随便挂在那里就行
 
-记得一定要用Java22+才可以运行，低版本Java会直接报错
+## 测试
+Windows11 + Zulu17，使用QQ邮箱，可以正常运行
+
+其他情况未测试，有bug我也不管了，我能用就行（）
