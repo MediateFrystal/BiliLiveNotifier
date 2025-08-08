@@ -11,7 +11,7 @@ import java.net.URL;
 public class LiveStatusChecker {
     private static int num = 0;
 
-    public static LiveData getLiveData(String apiUrl, String liveID) throws Exception {
+    public static LiveData getLiveData(String apiUrl, String liveID) {
         num++;
         System.out.println(num + ":检查直播状态... [" + liveID + "]");
 
@@ -33,6 +33,7 @@ public class LiveStatusChecker {
                 data.setLiveStatus(root.path("live_status").asInt());
                 data.setTitle(root.path("title").asText());
                 data.setUid(root.path("uid").asLong());
+                data.setUserCover(root.path("user_cover").asText());
                 return data;
             }
 
