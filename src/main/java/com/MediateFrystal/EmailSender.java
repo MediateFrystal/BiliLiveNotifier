@@ -48,9 +48,9 @@ public class EmailSender {
                 message.setContent(emailBody, "text/html; charset=utf-8");
 
                 Transport.send(message);
-                System.out.println("成功发送房间 [" + data.getRoomID() + "] 的开播通知至 " + recipient);
+                LogUtil.live("成功发送房间 [" + data.getRoomID() + "] 的开播通知至 " + recipient);
             } catch (MessagingException e) {
-                System.err.println("无法发送邮件至 " + recipient + ": " + e.getMessage());
+                LogUtil.err(" 无法发送邮件至" + recipient + "，邮件配置或 LiveIDs 配置可能出现问题: " + e.getMessage());
                 e.printStackTrace();
             }
         }

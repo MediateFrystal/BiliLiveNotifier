@@ -8,8 +8,10 @@ target/
 *.iws
 *.iml
 *.ipr
+out/
 
 ### VS Code ###
 .vscode/
 
-out/
+config.properties
+logs/

@@ -13,7 +13,7 @@ public class LiveStatusChecker {
 
     public static LiveData getLiveData(String apiUrl, String liveID) {
         num++;
-        System.out.println(num + ":检查直播状态... [" + liveID + "]");
+        LogUtil.info(num + ":检查直播状态... [" + liveID + "]");
 
         try {
             // 构建请求 URL
@@ -38,7 +38,7 @@ public class LiveStatusChecker {
             }
 
         } catch (Exception e) {
-            System.err.println("邮件配置或 LiveIDs 配置可能出现问题: \n" + e.getMessage());
+            LogUtil.err("邮件发送失败，邮件配置或 LiveIDs 配置可能出现问题: \n" + e.getMessage());
             e.printStackTrace();
         }
         return null;

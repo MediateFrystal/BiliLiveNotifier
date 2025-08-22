@@ -13,32 +13,41 @@
 # Example: example1@example.com,example2@example.com
 # LiveIDs: List of recipient LiveIDs, separated by commas too
 # Example: XXXXXX,XXXXXX,XXXXX
-LiveIDs=XXXXXX,XXXXXX,XXXXXX
-EmailList=example1@example.com,example2@example.com
-smtpHost=<smtpHost>
-smtpPort=<smtpPort>
-smtpUsername=<smtpUsername>
-smtpPassword=<smtpPassword>
+liveIDs=XXXXXX,XXXXXX,XXXXXX
+emailList=example1@example.com,example2@example.com
+smtp.host=<smtpHost>
+smtp.port=<smtpPort>
+smtp.username=<smtpUsername>
+smtp.password=<smtpPassword>
 retryIntervalSeconds=10
 userInputTimeoutSeconds=10
 sendTestMailOnStartup=true
+log.console.level=INFO
+log.file.level=ERROR
+log.liveToFile=true
 apiUrl=https://api.live.bilibili.com/room/v1/Room/get_info?room_id=
 ```
 
 ### 翻译对照
 
 ```
-LiveIDs=填写你要监听的主播，如有多个，用英文的逗号分隔
-EmailList=填写你要接受推送的邮箱，如有多个，用英文的逗号分隔
-smtpHost=SMTP服务器
-smtpPort=SMTP端口
-smtpUsername=SMTP用户名
-smtpPassword=SMTP密码
+liveIDs=填写你要监听的主播，如有多个，用英文的逗号分隔
+emailList=填写你要接受推送的邮箱，如有多个，用英文的逗号分隔
+smtp.host=SMTP服务器
+smtp.port=SMTP端口
+smtp.username=SMTP用户名
+smtp.password=SMTP密码
 retryIntervalSeconds=检测到未开播时多久再重试（秒）
 userInputTimeoutSeconds=检测到开播后手动跳过发送邮件的超时时长（秒）
-sendTestMailOnStartup=启动时发送一封测试邮件
+sendTestMailOnStartup=启动时是否发送一封测试邮件
+log.console.level=控制台日志显示级别
+log.file.level=文件记录日志级别
+log.liveToFile=日志是否输出到文件
 apiUrl=哔哩哔哩直播API
 ```
+
+级别大小为：INFO > WARN > ERROR > LIVE  
+默认的级别为：控制台输出全部日志（INFO），文件输出错误及直播的日志（ERROR）
 
 Linux后台运行命令：
 `
