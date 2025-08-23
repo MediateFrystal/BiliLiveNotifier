@@ -50,7 +50,7 @@ public class EmailSender {
                 Transport.send(message);
                 LogUtil.live("成功发送房间 [" + data.getRoomID() + "] 的开播通知至 " + recipient);
             } catch (MessagingException e) {
-                LogUtil.err(" 无法发送邮件至" + recipient + "，邮件配置或 LiveIDs 配置可能出现问题: " + e.getMessage());
+                LogUtil.err(" 无法发送邮件至" + recipient + "，邮件配置可能出现问题: " + e.getMessage());
                 e.printStackTrace();
             }
         }

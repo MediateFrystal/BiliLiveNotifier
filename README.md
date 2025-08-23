@@ -1,19 +1,15 @@
 # 📺 BiliLiveNotifier
 
-将哔哩哔哩直播开播通知发送到邮箱的工具  
+将哔哩哔哩直播通知发送到邮箱的工具
 
 基于原项目 [FireworkRocket/BiliLiveSendToMail](https://github.com/FireworkRocket/BiliLiveSendToMail)，并根据个人需求进行了修改和优化。
 
----
-
 ## ✨ 功能特性
-- 📡 定时检测 B 站主播是否开播  
-- 📧 自动发送开播通知邮件到指定邮箱  
-- ⚙️ 可自定义多个主播、多邮箱接收人  
-- 📝 支持控制台与文件日志输出，等级可配置  
-- 🔄 启动时可发送测试邮件，验证配置是否正确  
-
----
+- 📡 定时检测 B 站主播是否开播
+- 📧 自动发送开播通知邮件到指定邮箱
+- ⚙️ 可自定义多个主播、多邮箱接收人
+- 📝 支持控制台与文件日志输出，等级可配置
+- 🔄 启动时可发送测试邮件，验证配置是否正确
 
 ## 🚀 使用方法
 
@@ -22,10 +18,8 @@
 ```properties
 # Configuration file example
 # emailList: List of recipient email addresses, separated by commas
-# Example: example1@example.com,example2@example.com
-# liveIDs: List of recipient liveIDs, separated by commas too
-# Example: XXXXXX,XXXXXX,XXXXX
-liveIDs=XXXXXX,XXXXXX,XXXXXX
+# liveIDs: List of recipient liveIDs, separated by commas
+liveIDs=123456,234567,345678
 emailList=example1@example.com,example2@example.com
 smtp.host=<smtpHost>
 smtp.port=<smtpPort>
@@ -36,11 +30,9 @@ userInputTimeoutSeconds=5
 sendTestMailOnStartup=true
 log.console.level=INFO
 log.file.level=ERROR
-log.liveToFile=true
+log.toFile=true
 apiUrl=https://api.live.bilibili.com/room/v1/Room/get_info?room_id=
 ````
-
----
 
 ## 📖 配置说明
 
@@ -65,7 +57,7 @@ apiUrl=https://api.live.bilibili.com/room/v1/Room/get_info?room_id=
 * 控制台默认输出：`INFO`（全部）
 * 文件默认输出：`ERROR`（包含 ERROR 与 LIVE）
 
----
+日志文件会以日期为文件名输出至当前目录下的 `logs` 文件夹。
 
 ## 🖥️ 运行方式
 
@@ -82,8 +74,6 @@ nohup java -jar BiliLiveNotifier.jar &
 java -jar BiliLiveNotifier.jar
 ```
 
----
-
 ## 🧪 测试环境
 
 * 系统：Windows 11，Windows 10
@@ -92,5 +82,3 @@ java -jar BiliLiveNotifier.jar
 
 ✅ 以上环境运行正常
 ⚠️ 其他环境暂未测试
-
----
