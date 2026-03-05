@@ -18,18 +18,23 @@ public class LiveData {
     @JsonProperty("user_cover")
     private String userCover;
 
+    private final long startTime;
+    public LiveData() {
+        this.startTime = System.currentTimeMillis();
+    }
+
     public int getLiveStatus() {
         return liveStatus;
     }
-
+    public long getStartTime() {
+        return startTime;
+    }
     public String getTitle() {
         return title;
     }
-
     public long getUid() {
         return uid;
     }
-
     public String getRoomID() {
         return roomID;
     }
@@ -39,19 +44,15 @@ public class LiveData {
     public void setLiveStatus(int liveStatus) {
         this.liveStatus = liveStatus;
     }
-
     public void setTitle(String title) {
         this.title = title;
     }
-
     public void setUid(long uid) {
         this.uid = uid;
     }
-
     public void setRoomID(String roomID) {
         this.roomID = roomID;
     }
-
     public void setUserCover(String userCover) {
         this.userCover = userCover;
     }

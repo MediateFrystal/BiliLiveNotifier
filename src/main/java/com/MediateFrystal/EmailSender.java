@@ -56,7 +56,7 @@ public class EmailSender {
         }
     }
 
-    public static void sendEmails(List<String> recipients, LiveData data) throws GeneralSecurityException {
+    public static void send(List<String> recipients, LiveData data) throws GeneralSecurityException {
         String emailBody = "<!DOCTYPE html>" +
                 "<html>" +
                 "<head>" +

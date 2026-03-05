@@ -1,56 +1,67 @@
 # 📺 BiliLiveNotifier
 
-将哔哩哔哩直播通知发送到邮箱的工具
+将哔哩哔哩直播通知发送到邮箱的工具。
 
-基于原项目 [FireworkRocket/BiliLiveSendToMail](https://github.com/FireworkRocket/BiliLiveSendToMail)，并根据个人需求进行了修改和优化。
+基于原项目 [FireworkRocket/BiliLiveSendToMail](https://github.com/FireworkRocket/BiliLiveSendToMail)，并根据个人需求进行了重构。
 
 ## ✨ 功能特性
-- 📡 定时检测 B 站主播是否开播
-- 📧 自动发送开播通知邮件到指定邮箱
-- ⚙️ 可自定义多个主播、多邮箱接收人
-- 📝 支持控制台与文件日志输出，等级可配置
-- 🔄 启动时可发送测试邮件，验证配置是否正确
+- 📡 **定时检测**：实时监控 B 站主播是否开播。
+- 📧 **邮件通知**：自动发送详细开播通知邮件，支持多收件人。
+- 🔔 **Bark 推送**：支持 iOS Bark 推送（含时效性通知、点击跳转及封面展示）。
+- 📊 **时长统计**：下播时自动计算并记录本次直播时长。
+- ⚙️ **灵活配置**：支持静默模式、日志等级自定义。
+- 🧹 **自动清理**：定时清理过期日志文件，保持磁盘整洁。
+- 🔄 **启动自检**：启动时可发送邮件或 Bark 测试信息，验证配置是否生效。
 
 ## 🚀 使用方法
 
 首次运行时会自动生成配置文件 `config.properties`，示例如下：
 
 ```properties
-# Configuration file example
-# emailList: List of recipient email addresses, separated by commas
-# liveIDs: List of recipient liveIDs, separated by commas
-liveIDs=123456,234567,345678
-emailList=example1@example.com,example2@example.com
-smtp.host=<smtpHost>
-smtp.port=<smtpPort>
-smtp.username=<smtpUsername>
-smtp.password=<smtpPassword>
-retryIntervalSeconds=10
+# BiliLiveNotifier Configuration File
+# Created at: Fri Mar 06 00:15:45 HKT 2026
+
+liveIDs=123456,234567
+apiUrl=https://api.live.bilibili.com/room/v1/Room/get_info?room_id=
+retryIntervalSeconds=30
 userInputTimeoutSeconds=5
-sendTestMailOnStartup=true
 log.console.level=INFO
 log.file.level=ERROR
 log.toFile=true
-apiUrl=https://api.live.bilibili.com/room/v1/Room/get_info?room_id=
+log.maxHistoryDays=30
+email.enable=true
+email.list=example1@mail.com,example2@mail.com
+email.testOnStartup=true
+smtp.host=smtp.qq.com
+smtp.port=465
+smtp.username=<smtp.username>
+smtp.password=<smtp.password>
+bark.enable=false
+bark.url=https://api.day.app/your_key/
+bark.testOnStartup=true
+bark.pushOnEnd=true
 ````
 
 ## 📖 配置说明
 
-| 配置项                       | 说明                      |
-|---------------------------|-------------------------|
-| `liveIDs`                 | 要监听的主播房间号，多个用英文逗号分隔     |
-| `emailList`               | 接收通知的邮箱，多个用英文逗号分隔       |
-| `smtp.host`               | SMTP 服务器地址              |
-| `smtp.port`               | SMTP 端口号                |
-| `smtp.username`           | SMTP 用户名                |
-| `smtp.password`           | SMTP 密码                 |
-| `retryIntervalSeconds`    | 未开播时多久重试（秒）             |
-| `userInputTimeoutSeconds` | 检测到开播后，手动跳过发送邮件的超时时长（秒） |
-| `sendTestMailOnStartup`   | 启动时是否发送测试邮件             |
-| `log.console.level`       | 控制台日志级别                 |
-| `log.file.level`          | 文件日志级别                  |
-| `log.liveToFile`          | 是否将日志输出到文件              |
-| `apiUrl`                  | B 站直播 API 地址            |
+| **配置项**                   | **说明**                     |
+|---------------------------|----------------------------|
+| `liveIDs`                 | 监控的直播间 ID，多个用逗号分隔          |
+| `apiUrl`                  | B 站直播 API 地址               |
+| `retryIntervalSeconds`    | 轮询检查间隔（秒）                  |
+| `userInputTimeoutSeconds` | 启动时跳过测试邮件的等待时间（秒）          |
+| `log.console.level`       | 控制台日志级别                    |
+| `log.file.level`          | 文件日志级别                     |
+| `log.toFile`              | 是否将日志输出到文件                 |
+| `log.maxHistoryDays`      | 日志保留天数，过期的 `.log` 文件将被自动删除 |
+| `email.enable`            | 邮件推送总开关 (`true`/`false`)   |
+| `email.list`              | 接收通知的邮箱地址，多个用逗号分隔          |
+| `email.testOnStartup`     | 启动时是否尝试发送测试邮件              |
+| `smtp.*`                  | 发件箱 SMTP 服务器及身份验证配置        |
+| `bark.enable`             | 是否启用 Bark 推送               |
+| `bark.url`                | Bark 推送的 API 地址（含 Key）     |
+| `bark.testOnStartup`      | 启动时是否尝试发送测试 Bark 通知        |
+| `bark.pushOnEnd`          | 下播时是否推送 Bark 通知            |
 
 📌 日志等级：`INFO > WARN > ERROR > LIVE`
 
@@ -81,7 +92,7 @@ StartLimitIntervalSec=0
 
 [Service]
 Type=simple
-ExecStart=/YOUR_JAVA_HOME/bin/java -jar path/BiliLiveNotifier.jar &
+ExecStart=/YOUR_JAVA_HOME/bin/java -jar path/to/your/BiliLiveNotifier.jar &
 ExecStop=pkill -f BiliLiveNotifier.jar
 Restart=always
 WorkingDirectory=path

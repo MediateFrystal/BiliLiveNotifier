@@ -5,193 +5,202 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class ConfigLoader {
-    private final Properties conf = new Properties();
     private final String configFile = "config.properties";
+    private final Properties conf;
     private final Map<String, String> defaultProperties = new LinkedHashMap<>();
+
     private List<String> liveIDs;
-    private Set<String> emailList;
     private boolean emailEnable;
+    private Set<String> emailList;
+    private boolean testMailOnStartup;
     private int retryIntervalSeconds;
     private int userInputTimeoutSeconds;
-    private boolean sendTestMailOnStartup;
+    private boolean barkEnable;
+    private String barkUrl;
+    private boolean barkTestOnStartup;
+    private boolean barkPushOnEnd;
+    private LogUtil.Level consoleLevel;
+    private LogUtil.Level fileLevel;
+    private boolean logToFile;
     private int maxHistoryDays;
     private String apiUrl;
 
     public ConfigLoader() {
-        emailList = new HashSet<>();
-        // 默认配置
-        defaultProperties.put("liveIDs", "123456,234567,345678");
-        defaultProperties.put("emailList", "example1@example.com,example2@example.com");
-        defaultProperties.put("smtp.host", "<smtpHost>");
-        defaultProperties.put("smtp.port", "<smtpPort>");
-        defaultProperties.put("smtp.username", "<smtpUsername>");
-        defaultProperties.put("smtp.password", "<smtpPassword>");
-        defaultProperties.put("email.enable", "true");
-        defaultProperties.put("retryIntervalSeconds", "10");
+        initDefaults();
+
+        // 2. 使用默认 Properties 初始化主配置对象
+        Properties defaultProps = new Properties();
+        defaultProperties.forEach(defaultProps::put);
+        this.conf = new Properties(defaultProps);
+
+        // 3. 执行加载
+        loadConfig();
+
+        LogUtil.live("日志系统初始化完成，控制台级别: " + conf.getProperty("log.console.level", "INFO").toUpperCase() +
+                "；文件级别: " + conf.getProperty("log.file.level", "ERROR").toUpperCase() +
+                "；输出至文件：" + conf.getProperty("log.toFile", "true") +
+                "；日志保留天数：" + maxHistoryDays + " 天" +
+                "；邮件推送：" + (emailEnable ? "开启" : "关闭") +
+                "；正在监控 " + liveIDs.size() + " 个直播间" +
+                "；检查的间隔时间为 " + retryIntervalSeconds + " 秒。");
+    }
+    private void initDefaults() {
+        defaultProperties.put("liveIDs", "123456,234567");
+        defaultProperties.put("apiUrl", "https://api.live.bilibili.com/room/v1/Room/get_info?room_id=");
+        defaultProperties.put("retryIntervalSeconds", "30");
         defaultProperties.put("userInputTimeoutSeconds", "5");
-        defaultProperties.put("sendTestMailOnStartup", "true");
+
         defaultProperties.put("log.console.level", "INFO");
         defaultProperties.put("log.file.level", "ERROR");
         defaultProperties.put("log.toFile", "true");
         defaultProperties.put("log.maxHistoryDays", "30");
-        defaultProperties.put("apiUrl", "https://api.live.bilibili.com/room/v1/Room/get_info?room_id=");
 
-        checkAndCreateConfig(); // 如果文件不存在，创建文件
-        loadConfig();           // 加载配置
-        checkAndUpdateConfig(); // 自动补全缺失项
+        defaultProperties.put("email.enable", "true");
+        defaultProperties.put("email.list", "example1@mail.com,example2@mail.com");
+        defaultProperties.put("email.testOnStartup", "true");
+        defaultProperties.put("smtp.host", "smtp.qq.com");
+        defaultProperties.put("smtp.port", "465");
+        defaultProperties.put("smtp.username", "<smtp.username>");
+        defaultProperties.put("smtp.password", "<smtp.password>");
+
+        defaultProperties.put("bark.enable", "false");
+        defaultProperties.put("bark.url", "https://api.day.app/your_key/");
+        defaultProperties.put("bark.testOnStartup", "true");
+        defaultProperties.put("bark.pushOnEnd", "true");
     }
-
-    private void checkAndCreateConfig() {
+    public void loadConfig() {
         File file = new File(configFile);
-        if (!file.exists()) {
-            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
-                writer.write("# Configuration file example\n");
-                writer.write("# emailList: List of recipient email addresses, separated by commas\n");
-                writer.write("# liveIDs: List of recipient liveIDs, separated by commas\n");
-
-                for (Map.Entry<String, String> entry : defaultProperties.entrySet()) {
-                    writer.write(entry.getKey() + "=" + entry.getValue() + "\n");
-                }
-                writer.flush(); // 强制刷新
-
-                LogUtil.info("配置文件已创建: " + file.getAbsolutePath() +
-                        " 请在配置完成后再次启动程序 (^_^) ~ ");
-                System.exit(0);
+        if (file.exists()) {
+            try (InputStreamReader reader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
+                conf.load(reader);
             } catch (IOException e) {
-                LogUtil.err("创建配置文件时出错: " + e.getMessage());
-                e.printStackTrace();
+                LogUtil.err("读取配置文件失败: " + e.getMessage());
             }
+        } else {
+            LogUtil.warn("未找到配置文件，正在创建默认配置...");
+            createDefaultConfig(file);
+            LogUtil.info("配置文件已创建: " + file.getAbsolutePath() + " 请在配置完成后再次启动程序 (^_^) ~ ");
+            System.exit(0);
         }
-    }
 
-    private void loadConfig() {
-        try (FileInputStream input = new FileInputStream(configFile)) {
-            conf.load(input);
+        this.liveIDs = Arrays.asList(conf.getProperty("liveIDs").split(","));
+        this.apiUrl = conf.getProperty("apiUrl");
+        this.retryIntervalSeconds = getIntProperty("retryIntervalSeconds", 30);
+        this.userInputTimeoutSeconds = getIntProperty("userInputTimeoutSeconds", 5);
 
-            emailList.addAll(Arrays.asList(conf.getProperty("emailList", "").split(",")));
-
-            //获取主播房间ID列表，并校验输入是否合法
-            liveIDs = new ArrayList<>();
-            for (String id : conf.getProperty("liveIDs", "").split(",")) {
-                if (id.trim().matches("\\d+")) {
-                    liveIDs.add(id.trim());
-                } else {
-                    LogUtil.err("配置文件中无效的LiveID: " + id + ", 已跳过");
-                }
-            }
-
-            emailEnable = Boolean.parseBoolean(conf.getProperty("email.enable", "true"));
-            retryIntervalSeconds = Integer.parseInt(conf.getProperty("retryIntervalSeconds", "10"));
-            userInputTimeoutSeconds = Integer.parseInt(conf.getProperty("userInputTimeoutSeconds", "5"));
-            sendTestMailOnStartup = Boolean.parseBoolean(conf.getProperty("sendTestMailOnStartup", "true"));
-            maxHistoryDays = Integer.parseInt(conf.getProperty("log.maxHistoryDays", "30"));
-            apiUrl = conf.getProperty("apiUrl", "");
-
-            EmailSender.setSmtpConfig(
-                    conf.getProperty("smtp.host"),
-                    conf.getProperty("smtp.port"),
-                    conf.getProperty("smtp.username"),
-                    conf.getProperty("smtp.password")
-            );
-
-            String consoleLevelStr = conf.getProperty("log.console.level", "INFO").toUpperCase();
-            LogUtil.setConsoleLevel(LogUtil.Level.valueOf(consoleLevelStr));
-
-            String fileLevelStr = conf.getProperty("log.file.level", "ERROR").toUpperCase();
-            LogUtil.setFileLevel(LogUtil.Level.valueOf(fileLevelStr));
-
-            LogUtil.setLogLiveToFile(Boolean.parseBoolean(conf.getProperty("log.toFile", "true")));
-
-            LogUtil.live("日志系统初始化完成，控制台级别: " + consoleLevelStr +
-                    "，文件级别: " + fileLevelStr +
-                    "，输出至文件：" + conf.getProperty("log.toFile", "true") +
-                    "，日志保留天数：" + maxHistoryDays + " 天" +
-                    "，邮件推送：" + (emailEnable ? "开启" : "关闭"));
-
-            LogUtil.live("检查的间隔时间为 " + retryIntervalSeconds + " 秒。");
-        } catch (IOException | IllegalArgumentException e) {
-            LogUtil.err("加载配置文件时出错: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-    private void checkAndUpdateConfig() {
         try {
-            // 读取原始配置文件内容
-            List<String> lines = new ArrayList<>();
-            File conf = new File(configFile);
-            if (conf.exists()) {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(conf), StandardCharsets.UTF_8))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        lines.add(line);
-                    }
-                }
-            }
+            this.consoleLevel = LogUtil.Level.valueOf(conf.getProperty("log.console.level", "INFO").toUpperCase());
+            this.fileLevel = LogUtil.Level.valueOf(conf.getProperty("log.file.level", "ERROR").toUpperCase());
+        } catch (IllegalArgumentException e) {
+            LogUtil.err("日志级别配置错误，已回退至默认值");
+            this.consoleLevel = LogUtil.Level.INFO;
+            this.fileLevel = LogUtil.Level.ERROR;
+        }
+        this.logToFile = Boolean.parseBoolean(conf.getProperty("log.toFile", "true"));
+        this.maxHistoryDays = getIntProperty("log.maxHistoryDays", 30);
 
-            // 检查缺失项
-            List<String> newLines = new ArrayList<>(lines);
-            boolean updated = false;
+        this.emailEnable = Boolean.parseBoolean(conf.getProperty("email.enable"));
+        this.emailList = new HashSet<>(Arrays.asList(conf.getProperty("email.list").split(",")));
+        this.testMailOnStartup = Boolean.parseBoolean(conf.getProperty("email.testOnStartup"));
+        EmailSender.setSmtpConfig(
+                conf.getProperty("smtp.host"),
+                conf.getProperty("smtp.port"),
+                conf.getProperty("smtp.username"),
+                conf.getProperty("smtp.password")
+        );
+
+        this.barkEnable = Boolean.parseBoolean(conf.getProperty("bark.enable"));
+        this.barkUrl = conf.getProperty("bark.url");
+        this.barkTestOnStartup = Boolean.parseBoolean(conf.getProperty("bark.testOnStartup"));
+        this.barkPushOnEnd = Boolean.parseBoolean(conf.getProperty("bark.pushOnEnd"));
+
+        // 检查并自动补全缺失的配置项
+        ensureDefaults(file);
+    }
+
+    private int getIntProperty(String key, int defaultValue) {
+        try {
+            return Integer.parseInt(conf.getProperty(key));
+        } catch (NumberFormatException e) {
+            LogUtil.err("配置项 [" + key + "] 格式非法，已使用默认值: " + defaultValue);
+            return defaultValue;
+        }
+    }
+
+    private void ensureDefaults(File file) {
+        List<String> currentLines = new ArrayList<>();
+        if (file.exists()) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    currentLines.add(line);
+                }
+            } catch (IOException e) {
+                LogUtil.err("检查配置完整性时读取失败: " + e.getMessage());
+            }
+        }
+
+        boolean updated = false;
+        for (Map.Entry<String, String> entry : defaultProperties.entrySet()) {
+            if (!conf.containsKey(entry.getKey())) {
+                currentLines.add(entry.getKey() + "=" + entry.getValue());
+                String displayValue = entry.getKey().contains("password") ? "******" : entry.getValue();
+                LogUtil.warn("配置文件缺少项: " + entry.getKey() + "=" + displayValue);
+                updated = true;
+            }
+        }
+
+        if (updated || !file.exists()) {
+            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
+                for (String line : currentLines) {
+                    writer.write(line);
+                    writer.newLine();
+                }
+                LogUtil.info("配置文件已自动更新。");
+            } catch (IOException e) {
+                LogUtil.err("无法写入配置文件: " + e.getMessage());
+            }
+        }
+    }
+
+    private void createDefaultConfig(File file) {
+        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
+            writer.write("# BiliLiveNotifier Configuration File");
+            writer.newLine();
+            writer.write("# Created at: " + new java.util.Date());
+            writer.newLine();
+            writer.newLine();
 
             for (Map.Entry<String, String> entry : defaultProperties.entrySet()) {
-                boolean exists = false;
-                for (String line : lines) {
-                    if (line.trim().startsWith(entry.getKey() + "=")) {
-                        exists = true;
-                        break;
-                    }
-                }
-                if (!exists) {
-                    newLines.add(entry.getKey() + "=" + entry.getValue());
-                    LogUtil.info("配置文件缺少项，已添加默认值: " + entry.getKey() + "=" + entry.getValue());
-                    updated = true;
-                }
-            }
-
-            // 写回文件
-            if (updated) {
-                try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(conf), StandardCharsets.UTF_8))) {
-                    for (String line : newLines) {
-                        writer.write(line);
-                        writer.newLine();
-                    }
-                    LogUtil.info("配置文件已更新，缺失项已补全。");
-                }
+                writer.write(entry.getKey() + "=" + entry.getValue());
+                writer.newLine();
             }
         } catch (IOException e) {
-            LogUtil.err("更新配置文件失败: " + e.getMessage());
-            e.printStackTrace();
+            LogUtil.err("创建配置文件失败: " + e.getMessage());
         }
     }
 
+    // --- Getters ---
+    public List<String> getLiveIDs() { return liveIDs; }
+    public String getApiUrl() { return apiUrl; }
+    public int getRetryIntervalSeconds() { return retryIntervalSeconds; }
+    public int getUserInputTimeoutSeconds() { return userInputTimeoutSeconds; }
 
-    public List<String> getLiveIDs() {
-        return liveIDs;
-    }
+    public LogUtil.Level getConsoleLevel() { return consoleLevel; }
+    public LogUtil.Level getFileLevel() { return fileLevel; }
+    public boolean isLogToFile() { return logToFile; }
+    public int getMaxHistoryDays() { return maxHistoryDays; }
 
-    public Set<String> getEmailList() {
-        return emailList;
-    }
-    public boolean isEmailEnable() {
-        return emailEnable;
-    }
+    public boolean isEmailEnable() { return emailEnable; }
+    public Set<String> getEmailList() { return emailList; }
+    public boolean isTestMailOnStartup() { return testMailOnStartup; }
 
-    public int getRetryIntervalSeconds() {
-        return retryIntervalSeconds;
-    }
+    public boolean isBarkEnable() { return barkEnable; }
+    public String getBarkUrl() { return barkUrl; }
+    public boolean isBarkTestOnStartup() { return barkTestOnStartup; }
+    public boolean isBarkPushOnEnd() { return barkPushOnEnd; }
 
-    public int getUserInputTimeoutSeconds() {
-        return userInputTimeoutSeconds;
-    }
 
-    public boolean isSendTestMailOnStartup() {
-        return sendTestMailOnStartup;
-    }
 
-    public String getApiUrl() {
-        return apiUrl;
-    }
-
-    public int getMaxHistoryDays() {
-        return maxHistoryDays;
-    }
 }
+
