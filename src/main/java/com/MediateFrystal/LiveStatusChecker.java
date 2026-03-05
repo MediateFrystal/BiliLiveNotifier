@@ -2,7 +2,6 @@ package com.MediateFrystal;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -38,7 +37,7 @@ public class LiveStatusChecker {
             }
 
         } catch (Exception e) {
-            LogUtil.err("邮件发送失败，邮件配置可能出现问题: \n" + e.getMessage());
+            LogUtil.err("检查房间 " + liveID + " 状态失败: " + e.getMessage());
             e.printStackTrace();
         }
         return null;

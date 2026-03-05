@@ -61,11 +61,44 @@ apiUrl=https://api.live.bilibili.com/room/v1/Room/get_info?room_id=
 
 ## 🖥️ 运行方式
 
-### Linux 后台运行
+### Linux (后台运行)
 
 ```bash
 nohup java -jar BiliLiveNotifier.jar &
 ```
+
+
+### Linux 服务
+
+在 `/etc/systemd/system` 处新建 `bln.service`，添加如下内容，
+其中 `YOUR_JAVA_HOME` 为你的 Java 目录，`path` 为 BiliLiveNotifier 所在的路径
+
+```bash
+[Unit]
+Description=BiliLiveNotifier Service
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=/YOUR_JAVA_HOME/bin/java -jar path/BiliLiveNotifier.jar &
+ExecStop=pkill -f BiliLiveNotifier.jar
+Restart=always
+WorkingDirectory=path
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target
+```
+
+然后，执行 `systemctl daemon-reload` 重载配置，使用这些命令来管理程序：
+
+启动: `systemctl start bln`  
+关闭: `systemctl stop bln`  
+开机自启: `systemctl enable bln`  
+取消开机自启: `systemctl disable bln`  
+查看状态: `systemctl status bln`  
+重启: `systemctl restart bln`  
 
 ### Windows
 
@@ -76,9 +109,9 @@ java -jar BiliLiveNotifier.jar
 
 ## 🧪 测试环境
 
-* 系统：Windows 11，Windows 10
+* 系统：Windows 11，Windows 10，fnOS 0.9.21
 * JDK：Zulu 17，Zulu 21
-* 邮箱：QQ 邮箱
+* 发件邮箱：QQ 邮箱
 
 ✅ 以上环境运行正常
 ⚠️ 其他环境暂未测试

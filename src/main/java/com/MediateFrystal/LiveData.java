@@ -1,18 +1,21 @@
 package com.MediateFrystal;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class LiveData {
-    @SerializedName("live_status")
+    @JsonProperty("live_status")
     private int liveStatus;
-    @SerializedName("title")
+
+    @JsonProperty("title")
     private String title;
-    @SerializedName("uid")
+
+    @JsonProperty("uid")
     private long uid;
-    @SerializedName("room_id")
+
+    @JsonProperty("room_id")
     private String roomID;
 
-    @SerializedName("user_cover")
+    @JsonProperty("user_cover")
     private String userCover;
 
     public int getLiveStatus() {

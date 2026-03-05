@@ -10,9 +10,11 @@ public class ConfigLoader {
     private final Map<String, String> defaultProperties = new LinkedHashMap<>();
     private List<String> liveIDs;
     private Set<String> emailList;
+    private boolean emailEnable;
     private int retryIntervalSeconds;
     private int userInputTimeoutSeconds;
     private boolean sendTestMailOnStartup;
+    private int maxHistoryDays;
     private String apiUrl;
 
     public ConfigLoader() {
@@ -24,12 +26,14 @@ public class ConfigLoader {
         defaultProperties.put("smtp.port", "<smtpPort>");
         defaultProperties.put("smtp.username", "<smtpUsername>");
         defaultProperties.put("smtp.password", "<smtpPassword>");
+        defaultProperties.put("email.enable", "true");
         defaultProperties.put("retryIntervalSeconds", "10");
         defaultProperties.put("userInputTimeoutSeconds", "5");
         defaultProperties.put("sendTestMailOnStartup", "true");
         defaultProperties.put("log.console.level", "INFO");
         defaultProperties.put("log.file.level", "ERROR");
         defaultProperties.put("log.toFile", "true");
+        defaultProperties.put("log.maxHistoryDays", "30");
         defaultProperties.put("apiUrl", "https://api.live.bilibili.com/room/v1/Room/get_info?room_id=");
 
         checkAndCreateConfig(); // 如果文件不存在，创建文件
@@ -76,9 +80,11 @@ public class ConfigLoader {
                 }
             }
 
+            emailEnable = Boolean.parseBoolean(conf.getProperty("email.enable", "true"));
             retryIntervalSeconds = Integer.parseInt(conf.getProperty("retryIntervalSeconds", "10"));
             userInputTimeoutSeconds = Integer.parseInt(conf.getProperty("userInputTimeoutSeconds", "5"));
             sendTestMailOnStartup = Boolean.parseBoolean(conf.getProperty("sendTestMailOnStartup", "true"));
+            maxHistoryDays = Integer.parseInt(conf.getProperty("log.maxHistoryDays", "30"));
             apiUrl = conf.getProperty("apiUrl", "");
 
             EmailSender.setSmtpConfig(
@@ -96,8 +102,12 @@ public class ConfigLoader {
 
             LogUtil.setLogLiveToFile(Boolean.parseBoolean(conf.getProperty("log.toFile", "true")));
 
-            LogUtil.live("日志系统初始化完成，控制台级别: " + consoleLevelStr + "，文件级别: " + fileLevelStr +
-                    "，输出至文件：" + conf.getProperty("log.toFile", "true"));
+            LogUtil.live("日志系统初始化完成，控制台级别: " + consoleLevelStr +
+                    "，文件级别: " + fileLevelStr +
+                    "，输出至文件：" + conf.getProperty("log.toFile", "true") +
+                    "，日志保留天数：" + maxHistoryDays + " 天" +
+                    "，邮件推送：" + (emailEnable ? "开启" : "关闭"));
+
             LogUtil.live("检查的间隔时间为 " + retryIntervalSeconds + " 秒。");
         } catch (IOException | IllegalArgumentException e) {
             LogUtil.err("加载配置文件时出错: " + e.getMessage());
@@ -153,12 +163,16 @@ public class ConfigLoader {
         }
     }
 
+
     public List<String> getLiveIDs() {
         return liveIDs;
     }
 
     public Set<String> getEmailList() {
         return emailList;
+    }
+    public boolean isEmailEnable() {
+        return emailEnable;
     }
 
     public int getRetryIntervalSeconds() {
@@ -175,5 +189,9 @@ public class ConfigLoader {
 
     public String getApiUrl() {
         return apiUrl;
+    }
+
+    public int getMaxHistoryDays() {
+        return maxHistoryDays;
     }
 }

@@ -6,23 +6,33 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class Main {
-    private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
     public static Set<String> emailList = new HashSet<>();
     private static List<String> liveIDs;
+    private static boolean emailEnable;
     private static int retryIntervalSeconds;
     private static int userInputTimeoutSeconds;
     private static boolean sendTestMailOnStartup;
     private static String apiUrl;
+    private static int maxHistoryDays;
 
     public static void main(String[] args) throws GeneralSecurityException {
-        LogUtil.info("版本：v1.2.0 正在启动...");
+        LogUtil.live("版本：v1.2.1 正在启动...");
 
         loadConfig();
+        LogUtil.cleanOldLogs(maxHistoryDays);
 
-        if (sendTestMailOnStartup) {
-            LogUtil.info("准备发送测试邮件..." +
-                "\n在 " + userInputTimeoutSeconds + " 秒内按下 回车键 跳过测试邮件的发送！");
+        scheduler.scheduleAtFixedRate(() -> {
+            try {
+                LogUtil.info("正在执行每日例行日志清理...");
+                LogUtil.cleanOldLogs(maxHistoryDays);
+            } catch (Exception e) {
+                LogUtil.err("自动清理日志时出现异常: " + e.getMessage());
+            }
+        }, 24, 24, TimeUnit.HOURS);
 
+        if (sendTestMailOnStartup && emailEnable) {
+            LogUtil.info("准备发送测试邮件..." + "\n在 " + userInputTimeoutSeconds + " 秒内按下 回车键 跳过测试邮件的发送！");
             // 等待用户输入
             if (waitForUserInput()) {
                 LogUtil.info("已取消发送测试邮件... ~ （*＾-＾*）\n");
@@ -37,6 +47,8 @@ public class Main {
                 EmailSender.sendEmails(new ArrayList<>(emailList), testData);
                 LogUtil.info(">>>>>>测试邮件发送完成<<<<<<\n []~(￣▽￣)~*\n");
             }
+        } if (!emailEnable) {
+            LogUtil.info("邮件推送开关已关闭，跳过启动测试邮件。");
         } else {
             LogUtil.info("已取消发送测试邮件... ~ （*＾-＾*）\n");
         }
@@ -65,18 +77,22 @@ public class Main {
 
                 // 检查直播状态
                 if (!wasLive && isLive) {
-                    LogUtil.live("房间 [" + liveID + "] 的直播状态为 1 并且上次检查时未开播，准备发送邮件..." +
-                            "\n在 " + userInputTimeoutSeconds + " 秒内按下 回车键 跳过本房间邮件的发送！");
-
-                    // 等待用户输入
-                    if (waitForUserInput()) {
-                        LogUtil.live("发送邮件已取消... ~ （*＾-＾*）\n");
+                    LogUtil.live("检测到房间 [" + liveID + "] 开播！");
+                    if (emailEnable) {
+                        LogUtil.live("准备发送邮件..." + "\n在 " + userInputTimeoutSeconds + " 秒内按下 回车键 跳过本房间邮件的发送！");
+                        // 等待用户输入
+                        if (waitForUserInput()) {
+                            LogUtil.live("发送邮件已取消... ~ （*＾-＾*）\n");
+                        } else {
+                            // 发送邮件给所有收件人
+                            LogUtil.live(">>>>>>邮件发送中<<<<<<");
+                            EmailSender.sendEmails(new ArrayList<>(emailList), data);
+                            LogUtil.live(">>>>>>邮件发送完成<<<<<<\n");
+                        }
                     } else {
-                        // 发送邮件给所有收件人
-                        LogUtil.live(">>>>>>邮件发送中<<<<<<");
-                        EmailSender.sendEmails(new ArrayList<>(emailList), data);
-                        LogUtil.live(">>>>>>邮件发送完成<<<<<<\n");
+                        LogUtil.info("邮件推送已关闭，仅记录日志。");
                     }
+
                 } else if (wasLive && !isLive) {
                     LogUtil.live("房间 [" + liveID + "] 的直播状态变为 0，直播结束。");
                 } else if (wasLive && isLive) {
@@ -96,10 +112,12 @@ public class Main {
         ConfigLoader config = new ConfigLoader();
         liveIDs = config.getLiveIDs();
         emailList = config.getEmailList();
+        emailEnable = config.isEmailEnable();
         retryIntervalSeconds = config.getRetryIntervalSeconds();
         userInputTimeoutSeconds = config.getUserInputTimeoutSeconds();
         sendTestMailOnStartup = config.isSendTestMailOnStartup();
         apiUrl = config.getApiUrl();
+        maxHistoryDays = config.getMaxHistoryDays();
     }
 
     private static boolean waitForUserInput() {
