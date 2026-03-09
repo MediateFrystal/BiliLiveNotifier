@@ -5,6 +5,7 @@
 基于原项目 [FireworkRocket/BiliLiveSendToMail](https://github.com/FireworkRocket/BiliLiveSendToMail)，并根据个人需求进行了重构。
 
 ## ✨ 功能特性
+
 - 📡 **定时检测**：实时监控 B 站主播是否开播。
 - 📧 **邮件通知**：自动发送详细开播通知邮件，支持多收件人。
 - 🔔 **Bark 推送**：支持 iOS Bark 推送（含时效性通知、点击跳转及封面展示）。
@@ -65,8 +66,8 @@ bark.pushOnEnd=true
 
 📌 日志等级：`INFO > WARN > ERROR > LIVE`
 
-* 控制台默认输出：`INFO`（全部）
-* 文件默认输出：`ERROR`（包含 ERROR 与 LIVE）
+- 控制台默认输出：`INFO`（全部）
+- 文件默认输出：`ERROR`（包含 ERROR 与 LIVE）
 
 日志文件会以日期为文件名输出至当前目录下的 `logs` 文件夹。
 
@@ -77,7 +78,6 @@ bark.pushOnEnd=true
 ```bash
 nohup java -jar BiliLiveNotifier.jar &
 ```
-
 
 ### Linux 服务
 
@@ -92,11 +92,11 @@ StartLimitIntervalSec=0
 
 [Service]
 Type=simple
-ExecStart=/YOUR_JAVA_HOME/bin/java -jar path/to/your/BiliLiveNotifier.jar &
-ExecStop=pkill -f BiliLiveNotifier.jar
-Restart=always
 WorkingDirectory=path
-RestartSec=1
+ExecStart=/YOUR_JAVA_HOME/bin/java -jar path/to/your/BiliLiveNotifier.jar
+
+Restart=on-failure
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
@@ -114,15 +114,16 @@ WantedBy=multi-user.target
 ### Windows
 
 直接运行 JAR 文件即可
-```
+
+```cmd
 java -jar BiliLiveNotifier.jar
 ```
 
 ## 🧪 测试环境
 
-* 系统：Windows 11，Windows 10，fnOS 0.9.21
-* JDK：Zulu 17，Zulu 21
-* 发件邮箱：QQ 邮箱
+- 系统：Windows 11，Windows 10，fnOS 0.9.21
+- JDK：Zulu 17，Zulu 21
+- 发件邮箱：QQ 邮箱
 
 ✅ 以上环境运行正常
 ⚠️ 其他环境暂未测试
