@@ -83,7 +83,19 @@ public class ConfigLoader {
             System.exit(0);
         }
 
-        this.liveIDs = Arrays.asList(conf.getProperty("liveIDs").split(","));
+        //this.liveIDs = Arrays.asList(conf.getProperty("liveIDs").split(","));
+        String rawIDs = conf.getProperty("liveIDs", "");
+        String[] idArray = rawIDs.split(",");
+        Set<String> distinctIDs = new LinkedHashSet<>(); // 保持顺序且去重
+        for (String id : idArray) {
+            String trimmedId = id.trim();
+            if (!trimmedId.isEmpty()) {
+                if (!distinctIDs.add(trimmedId)) {
+                    LogUtil.warn("发现重复的房间号并已自动过滤: [" + trimmedId + "]");
+                }
+            }
+        }
+        this.liveIDs = new ArrayList<>(distinctIDs);
         this.apiUrl = conf.getProperty("apiUrl");
         this.retryIntervalSeconds = getIntProperty("retryIntervalSeconds", 30);
         this.userInputTimeoutSeconds = getIntProperty("userInputTimeoutSeconds", 5);

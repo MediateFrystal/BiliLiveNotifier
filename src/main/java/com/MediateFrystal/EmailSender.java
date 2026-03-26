@@ -5,8 +5,10 @@ import jakarta.mail.*;
 import jakarta.mail.internet.*;
 
 import java.security.GeneralSecurityException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.CompletableFuture;
 
 public class EmailSender {
     private static String smtpHost;
@@ -21,7 +23,32 @@ public class EmailSender {
         smtpPassword = password;
     }
 
-    public static void emailSender(List<String> recipients, String emailBody, String emailSubject, LiveData data) throws GeneralSecurityException {
+    /**
+     * 发送测试邮件
+     */
+    public static void test(List<String> emailList, String version) {
+        LogUtil.info(">>>>>>测试邮件发送中<<<<<<");
+        LiveData testData = new LiveData();
+        testData.setRoomID("TEST_ROOM");
+        testData.setUid(172888798);
+        testData.setTitle("这是一封功能测试邮件");
+        testData.setLiveStatus(1);
+        testData.setUserCover(null);
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                // 测试邮件使用占位昵称和默认头像
+                send(new ArrayList<>(emailList), testData, "测试", "https://static.hdslb.com/images/akari.jpg", version);
+            } catch (Exception e) {
+                LogUtil.err("测试邮件发送异步任务失败: " + e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * 发送正式邮件
+     */
+    public static void send(List<String> recipients, LiveData data, String userName, String userFace, String version) throws GeneralSecurityException {
         Properties props = new Properties();
         props.put("mail.smtp.host", smtpHost);
         props.put("mail.smtp.port", smtpPort);
@@ -39,57 +66,67 @@ public class EmailSender {
             }
         });
 
-        for (String recipient : recipients) {
-            try {
-                Message message = new MimeMessage(session);
-                message.setFrom(new InternetAddress(smtpUsername));
-                message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipient));
-                message.setSubject(emailSubject);
-                message.setContent(emailBody, "text/html; charset=utf-8");
+        try {
+            Message message = new MimeMessage(session);
+            message.setFrom(new InternetAddress(smtpUsername));
 
-                Transport.send(message);
-                LogUtil.live("成功发送房间 [" + data.getRoomID() + "] 的开播通知至 " + recipient);
-            } catch (MessagingException e) {
-                LogUtil.err(" 无法发送邮件至" + recipient + "，邮件配置可能出现问题: " + e.getMessage());
-                e.printStackTrace();
+            // 添加所有收件人
+            InternetAddress[] addresses = new InternetAddress[recipients.size()];
+            for (int i = 0; i < recipients.size(); i++) {
+                addresses[i] = new InternetAddress(recipients.get(i));
             }
+            message.setRecipients(Message.RecipientType.TO, addresses);
+
+            // 邮件主题：包含主播名和标题
+            String safeName = (userName != null) ? userName : "主播";
+            message.setSubject("【开播】" + safeName + "：" + data.getTitle());
+            String webLink = "https://live.bilibili.com/" + data.getRoomID();
+
+            String htmlContent = "<!DOCTYPE html><html>" +
+                    "<head><style>" +
+                    "    .container { font-family: 'Microsoft YaHei', -apple-system, sans-serif; max-width: 500px; margin: 20px auto; border: 1px solid #f0f0f0; border-radius: 12px; overflow: hidden; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }" +
+                    "    .user-area { padding: 30px 20px 10px; }" +
+                    "    .avatar { width: 80px; height: 80px; border-radius: 40px; border: 1px solid #eee; }" +
+                    "    .username { font-size: 18px; font-weight: bold; color: #18191c; margin-top: 10px; }" +
+                    "    .status-tag { display: inline-block; background: #fb7299; color: white; font-size: 12px; padding: 2px 8px; border-radius: 4px; vertical-align: middle; margin-bottom: 2px; }" +
+                    "    .content { padding: 0 25px 30px; }" +
+                    "    .live-title { font-size: 16px; color: #61666d; margin: 15px 0; line-height: 1.4; }" +
+                    "    .cover-box { margin-bottom: 20px; }" +
+                    "    .cover-img { width: 100%; border-radius: 8px; display: block; }" +
+                    "    .btn-group { margin-top: 20px; }" +
+                    "    .btn { display: inline-block; padding: 10px 20px; border-radius: 20px; font-weight: bold; text-decoration: none; margin: 5px; }" +
+                    "    .btn-main { background-color: #fb7299; color: #ffffff !important; box-shadow: 0 4px 10px rgba(251,114,153,0.3); }" +
+                    "    .footer { background: #f6f7f9; padding: 20px; font-size: 12px; color: #999; line-height: 1.6; }" +
+                    "</style></head>" +
+                    "<body>" +
+                    "<div class='container'>" +
+                    "    <div class='user-area'>" +
+                    "        <img src='" + (userFace != null && !userFace.isEmpty() ? userFace : "https://static.hdslb.com/images/akari.jpg") + "' class='avatar'>" +
+                    "        <div class='username'><span class='status-tag'>直播中</span> " + safeName + "</div>" +
+                    "    </div>" +
+                    "    <div class='content'>" +
+                    "        <div class='live-title'>" + data.getTitle() + "</div>" +
+                    "        <div class='cover-box'>" +
+                    "            <a href='" + webLink + "'><img src='" + data.getUserCover() + "' class='cover-img'></a>" +
+                    "        </div>" +
+                    "        <div class='btn-group'>" +
+                    "            <a href='" + webLink + "' class='btn btn-main'>⚡ 浏览器打开</a>" +
+                    "        </div>" +
+                    "    </div>" +
+                    "    <div class='footer'>" +
+                    "        房间 ID: " + data.getRoomID() + "<br>" +
+                    "        UID: " + data.getUid() + "<br><br>" +
+                    "        BiliLiveNotifier v" + version + "<br>" +
+                    "        <span style='font-size:11px;'>如果您不想再接收此类提醒，请修改程序配置。</span>" +
+                    "    </div>" +
+                    "</div></body></html>";
+
+            message.setContent(htmlContent, "text/html; charset=UTF-8");
+            Transport.send(message);
+            LogUtil.live(">>>>>>邮件发送完成<<<<<<\n[" + data.getRoomID() + "] 的邮件已成功发送给 " + recipients.size() + " 位收件人。  []~(￣▽￣)~*\n");
+
+        } catch (MessagingException e) {
+            throw new RuntimeException("邮件发送核心过程出错", e);
         }
-    }
-
-    public static void send(List<String> recipients, LiveData data) throws GeneralSecurityException {
-        String emailBody = "<!DOCTYPE html>" +
-                "<html>" +
-                "<head>" +
-                "<style>" +
-                "body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f3f3; padding: 20px; }" +
-                ".container { background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); }" +
-                "h1 { color: #0078d7; background-color: #f0f0f0; padding: 10px; border-radius: 4px; }" +
-                ".info-block { background-color: #e6e6fa; padding: 10px; border-radius: 4px; margin: 0; }" +
-                "p { color: #333333; margin: 0; }" +
-                "a { color: #0078d7; text-decoration: none; }" +
-                "a:hover { text-decoration: underline; }" +
-                ".image-container { text-align: center; margin: 20px 0; }" +
-                ".image-container img { max-width: 100%; height: auto; border-radius: 8px; }" +
-                "</style>" +
-                "</head>" +
-                "<body>" +
-                "<div class='container'>" +
-                "<div class='image-container'><img src='" + data.getUserCover() + "' alt='User Cover'></div>" +
-                "<h1>直播信息通知</h1>" +
-                "<div class='info-block'>" +
-                "<p><strong>标题:</strong> " + data.getTitle() + "</p>" +
-                "<p><strong>UID:</strong> " + data.getUid() + "</p>" +
-                "<p><strong>房间ID:</strong> " + data.getRoomID() + "</p>" +
-                "<p><strong>直播状态:</strong> " + data.getLiveStatus() + "</p>" +
-                "<p><strong>用户空间:</strong> <a href='https://space.bilibili.com/" + data.getUid() + "'>点击打开</a></p>" +
-                "<p><strong>直播链接:</strong> <a href='https://live.bilibili.com/" + data.getRoomID() + "'>点击打开</a></p>" +
-                "<p>如果您不想再接收此类邮件，请联系管理员。</p>" +
-                "</div>" +
-                "</div>" +
-                "</body>" +
-                "</html>";
-        String emailSubject = "【开播提醒】" + data.getUid();
-
-        emailSender(recipients, emailBody, emailSubject, data);
     }
 }

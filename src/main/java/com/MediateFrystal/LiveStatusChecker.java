@@ -12,7 +12,7 @@ public class LiveStatusChecker {
 
     public static LiveData getLiveData(String apiUrl, String liveID) {
         num++;
-        LogUtil.info(num + ": 检查 [" + liveID + "] 直播状态... ");
+        LogUtil.info(num + "\t: 检查房间 [" + liveID + "] 直播状态... ");
 
         try {
             // 构建请求 URL

@@ -13,5 +13,5 @@ out/
 ### VS Code ###
 .vscode/
 
-config.properties
+*.properties
 logs/

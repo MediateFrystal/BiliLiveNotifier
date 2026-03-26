@@ -10,6 +10,8 @@
 - 📧 **邮件通知**：自动发送详细开播通知邮件，支持多收件人。
 - 🔔 **Bark 推送**：支持 iOS Bark 推送（含时效性通知、点击跳转及封面展示）。
 - 📊 **时长统计**：下播时自动计算并记录本次直播时长。
+- 🖼️ **视觉增强**：Bark 及邮件推送均支持显示主播头像和用户名（通过第三方 API）。
+- 💾 **智能缓存**：主播信息仅在缺失时通过第三方 API 获取一次，缓存至本地，有效节省 API 使用量。
 - ⚙️ **灵活配置**：支持静默模式、日志等级自定义。
 - 🧹 **自动清理**：定时清理过期日志文件，保持磁盘整洁。
 - 🔄 **启动自检**：启动时可发送邮件或 Bark 测试信息，验证配置是否生效。
@@ -41,7 +43,7 @@ bark.enable=false
 bark.url=https://api.day.app/your_key/
 bark.testOnStartup=true
 bark.pushOnEnd=true
-````
+```
 
 ## 📖 配置说明
 
@@ -71,18 +73,22 @@ bark.pushOnEnd=true
 
 日志文件会以日期为文件名输出至当前目录下的 `logs` 文件夹。
 
+## 💾 本地缓存说明
+
+本项目使用 **[UApiPro (uapis.cn)](https://uapis.cn/)** 提供的接口来获取主播公开资料，包括头像和用户名。
+
+- **积分消耗**：约 4 积分/次。
+- **免费额度**：访客用户每月约 1500 积分（足够支持数百名主播的首次抓取）。
+
+为了提升加载速度并节省第三方 API 积分，程序会自动创建 `user_cache.properties` 文件用于存储用户信息。  
+程序仅在缓存中找不到该 UID 的信息时，才会调用第三方接口。若主播更改了头像或昵称，程序**不会**实时同步。如需更新资料，请手动删除该文件中对应的行，或直接删除整个文件后重启程序。
+
 ## 🖥️ 运行方式
 
-### Linux (后台运行)
-
-```bash
-nohup java -jar BiliLiveNotifier.jar &
-```
-
-### Linux 服务
+### Linux 服务部署 (推荐)
 
 在 `/etc/systemd/system` 处新建 `bln.service`，添加如下内容，
-其中 `YOUR_JAVA_HOME` 为你的 Java 目录，`path` 为 BiliLiveNotifier 所在的路径
+其中 `YOUR_JAVA_HOME` 为你的 Java 目录，`/path/to/your/BiliLiveNotifier` 为 BiliLiveNotifier 所在的路径
 
 ```bash
 [Unit]
@@ -92,7 +98,7 @@ StartLimitIntervalSec=0
 
 [Service]
 Type=simple
-WorkingDirectory=path
+WorkingDirectory=/path/to/your/BiliLiveNotifier
 ExecStart=/YOUR_JAVA_HOME/bin/java -jar path/to/your/BiliLiveNotifier.jar
 
 Restart=on-failure
@@ -104,12 +110,19 @@ WantedBy=multi-user.target
 
 然后，执行 `systemctl daemon-reload` 重载配置，使用这些命令来管理程序：
 
-启动: `systemctl start bln`  
-关闭: `systemctl stop bln`  
-开机自启: `systemctl enable bln`  
-取消开机自启: `systemctl disable bln`  
-查看状态: `systemctl status bln`  
-重启: `systemctl restart bln`  
+- **启动**: `systemctl start bln`  
+- **关闭**: `systemctl stop bln`  
+- **重启**: `systemctl restart bln`  
+- **开机自启**: `systemctl enable bln`  
+- **取消开机自启**: `systemctl disable bln`  
+- **查看状态**: `systemctl status bln`  
+- **查看实时日志**: `journalctl -u bln -f`
+
+### Linux (后台运行)
+
+```bash
+nohup java -jar BiliLiveNotifier.jar &
+```
 
 ### Windows
 
@@ -121,9 +134,9 @@ java -jar BiliLiveNotifier.jar
 
 ## 🧪 测试环境
 
-- 系统：Windows 11，Windows 10，fnOS 0.9.21
-- JDK：Zulu 17，Zulu 21
-- 发件邮箱：QQ 邮箱
+- **系统**：Windows 11, Windows 10, fnOS 0.9.21
+- **JDK**：Zulu 17, Zulu 21
+- **接收端**: iOS (Bark App), QQ 邮箱, Outlook 邮箱
 
-✅ 以上环境运行正常
+✅ 以上环境运行正常  
 ⚠️ 其他环境暂未测试

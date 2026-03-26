@@ -7,27 +7,31 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 public class BarkSender {
-    public static void send(String baseUrl, String title, String content, String roomId, String imageUrl) {
+    public static void send(String baseUrl, String title, String content, String roomId, String imageUrl, String iconUrl) {
         if (baseUrl == null || baseUrl.isEmpty()) return;
         try {
-            String encodedTitle = URLEncoder.encode(title, StandardCharsets.UTF_8);
-            String encodedContent = URLEncoder.encode(content, StandardCharsets.UTF_8);
-
             StringBuilder urlBuilder = new StringBuilder(baseUrl);
             if (!baseUrl.endsWith("/")) urlBuilder.append("/");
-            urlBuilder.append(encodedTitle).append("/").append(encodedContent);
+            urlBuilder.append(URLEncoder.encode(title, StandardCharsets.UTF_8))
+                    .append("/")
+                    .append(URLEncoder.encode(content, StandardCharsets.UTF_8));
             urlBuilder.append("?level=timeSensitive");
 
+            // 跳转直播间
             if (roomId != null) {
                 urlBuilder.append("&url=").append(URLEncoder.encode("bilibili://live/" + roomId, StandardCharsets.UTF_8));
             }
+            // 推送大图（直播封面）
             if (imageUrl != null && !imageUrl.isEmpty()) {
                 urlBuilder.append("&image=").append(URLEncoder.encode(imageUrl, StandardCharsets.UTF_8));
+            }
+            // 推送图标（主播头像）
+            if (iconUrl != null && !iconUrl.isEmpty()) {
+                urlBuilder.append("&icon=").append(URLEncoder.encode(iconUrl, StandardCharsets.UTF_8));
             }
 
             URL url = new URI(urlBuilder.toString()).toURL();
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            //LogUtil.info("Full URL: " + urlBuilder.toString());
             conn.setRequestMethod("GET");
             conn.setConnectTimeout(5000);
 
