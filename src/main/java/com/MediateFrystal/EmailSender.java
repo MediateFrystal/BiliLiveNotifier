@@ -27,7 +27,6 @@ public class EmailSender {
      * 发送测试邮件
      */
     public static void test(List<String> emailList, String version) {
-        LogUtil.info(">>>>>>测试邮件发送中<<<<<<");
         LiveData testData = new LiveData();
         testData.setRoomID("TEST_ROOM");
         testData.setUid(172888798);
@@ -123,7 +122,7 @@ public class EmailSender {
 
             message.setContent(htmlContent, "text/html; charset=UTF-8");
             Transport.send(message);
-            LogUtil.live(">>>>>>邮件发送完成<<<<<<\n[" + data.getRoomID() + "] 的邮件已成功发送给 " + recipients.size() + " 位收件人。  []~(￣▽￣)~*\n");
+            LogUtil.push(">>>>>>邮件发送完成<<<<<<\n[" + data.getRoomID() + "] 的邮件已成功发送给 " + recipients.size() + " 位收件人。  []~(￣▽￣)~*\n");
 
         } catch (MessagingException e) {
             throw new RuntimeException("邮件发送核心过程出错", e);

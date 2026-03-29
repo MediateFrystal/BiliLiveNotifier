@@ -12,7 +12,7 @@ public class LiveStatusChecker {
 
     public static LiveData getLiveData(String apiUrl, String liveID) {
         num++;
-        LogUtil.info(num + "\t: 检查房间 [" + liveID + "] 直播状态... ");
+        LogUtil.check(num + "\t: 检查房间 [" + liveID + "] 直播状态... ");
 
         try {
             // 构建请求 URL
@@ -37,7 +37,7 @@ public class LiveStatusChecker {
             }
 
         } catch (Exception e) {
-            LogUtil.err("检查房间 " + liveID + " 状态失败: " + e.getMessage());
+            LogUtil.err("检查房间 [" + liveID + "] 状态失败: " + e.getMessage());
             e.printStackTrace();
         }
         return null;

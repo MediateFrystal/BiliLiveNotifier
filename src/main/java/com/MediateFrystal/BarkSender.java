@@ -37,7 +37,7 @@ public class BarkSender {
 
             int code = conn.getResponseCode();
             if (code == 200) {
-                LogUtil.info("Bark 推送成功: " + title);
+                LogUtil.push("Bark 推送成功: " + title);
             } else {
                 LogUtil.err("Bark 推送失败，HTTP 响应码: " + code);
             }
