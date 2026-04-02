@@ -4,10 +4,12 @@ import com.sun.mail.util.MailSSLSocketFactory;
 import jakarta.mail.*;
 import jakarta.mail.internet.*;
 
+import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
 
 public class EmailSender {
@@ -26,28 +28,35 @@ public class EmailSender {
     /**
      * 发送测试邮件
      */
-    public static void test(List<String> emailList, String version) {
-        LiveData testData = new LiveData();
-        testData.setRoomID("TEST_ROOM");
-        testData.setUid(172888798);
-        testData.setTitle("这是一封功能测试邮件");
-        testData.setLiveStatus(1);
-        testData.setUserCover(null);
+    public static void test(List<String> emailList, int timeout) {
+        // 启动测试邮件逻辑
+        LogUtil.sys("准备发送测试邮件... 在 " + timeout + " 秒内按下回车键跳过！");
+        if (waitForUserInput(timeout)) {
+            LogUtil.sys("已跳过测试邮件的发送... ~ （*＾-＾*）\n");
+        } else {
+            LiveData testData = new LiveData();
+            testData.setRoomID("TEST_ROOM");
+            testData.setUid("172888798");
+            testData.setTitle("这是一封功能测试邮件");
+            testData.setLiveStatus(1);
+            testData.setUserCover(null);
 
-        CompletableFuture.runAsync(() -> {
-            try {
-                // 测试邮件使用占位昵称和默认头像
-                send(new ArrayList<>(emailList), testData, "测试", "https://static.hdslb.com/images/akari.jpg", version);
-            } catch (Exception e) {
-                LogUtil.err("测试邮件发送异步任务失败: " + e.getMessage());
-            }
-        });
+            CompletableFuture.runAsync(() -> {
+                try {
+                    // 测试邮件使用占位昵称和默认头像
+                    send(new ArrayList<>(emailList), testData, "测试", "https://static.hdslb.com/images/akari.jpg");
+                } catch (Exception e) {
+                    LogUtil.err("测试邮件发送异步任务失败: " + e.getMessage());
+                }
+            });
+        }
+        // else { LogUtil.sys("邮件推送开关已关闭，跳过启动测试。"); }
     }
 
     /**
      * 发送正式邮件
      */
-    public static void send(List<String> recipients, LiveData data, String userName, String userFace, String version) throws GeneralSecurityException {
+    public static void send(List<String> recipients, LiveData data, String userName, String userFace) throws GeneralSecurityException {
         Properties props = new Properties();
         props.put("mail.smtp.host", smtpHost);
         props.put("mail.smtp.port", smtpPort);
@@ -115,7 +124,7 @@ public class EmailSender {
                     "    <div class='footer'>" +
                     "        房间 ID: " + data.getRoomID() + "<br>" +
                     "        UID: " + data.getUid() + "<br><br>" +
-                    "        BiliLiveNotifier v" + version + "<br>" +
+                    "        BiliLiveNotifier v" + Main.VERSION + "<br>" +
                     "        <span style='font-size:11px;'>如果您不想再接收此类提醒，请修改程序配置。</span>" +
                     "    </div>" +
                     "</div></body></html>";
@@ -127,5 +136,21 @@ public class EmailSender {
         } catch (MessagingException e) {
             throw new RuntimeException("邮件发送核心过程出错", e);
         }
+    }
+
+    private static boolean waitForUserInput(int timeout) {
+        long endTime = System.currentTimeMillis() + timeout * 1000L;
+        try {
+            while (System.currentTimeMillis() < endTime) {
+                if (System.in.available() > 0) {
+                    new Scanner(System.in).nextLine();
+                    return true;
+                }
+                Thread.sleep(100); // Short sleep to avoid busy-waiting
+            }
+        } catch (IOException | InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        return false;
     }
 }

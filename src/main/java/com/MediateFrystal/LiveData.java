@@ -10,13 +10,16 @@ public class LiveData {
     private String title;
 
     @JsonProperty("uid")
-    private long uid;
+    private String uid;
 
     @JsonProperty("room_id")
     private String roomID;
 
     @JsonProperty("user_cover")
     private String userCover;
+
+    @JsonProperty("user_name")
+    private String userName;
 
     private final long startTime;
     public LiveData() {
@@ -32,7 +35,7 @@ public class LiveData {
     public String getTitle() {
         return title;
     }
-    public long getUid() {
+    public String getUid() {
         return uid;
     }
     public String getRoomID() {
@@ -41,13 +44,16 @@ public class LiveData {
     public String getUserCover() {
         return userCover;
     }
+    public String getUserName() {
+        return (userName != null && !userName.isEmpty()) ? userName : "房间 " + roomID;
+    }
     public void setLiveStatus(int liveStatus) {
         this.liveStatus = liveStatus;
     }
     public void setTitle(String title) {
         this.title = title;
     }
-    public void setUid(long uid) {
+    public void setUid(String uid) {
         this.uid = uid;
     }
     public void setRoomID(String roomID) {
@@ -55,5 +61,8 @@ public class LiveData {
     }
     public void setUserCover(String userCover) {
         this.userCover = userCover;
+    }
+    public void setUserName(String userName) {
+        this.userName = userName;
     }
 }

@@ -12,8 +12,8 @@
 - 🖼️ **视觉增强**：通过第三方 API^，Bark 及邮件推送均可以显示主播头像和用户名。
 - 💾 **智能缓存**：主播信息仅在缺失时通过第三方 API 获取一次，缓存至本地，有效节省 API 使用量。
 - 📊 **时长统计**：下播时自动计算并记录本次直播时长。
-- 🎨 **彩色日志**：**[New v1.3.2]** 控制台支持彩色输出，根据不同类型（开播、推送、系统）分类显示。
-- 🏷️ **标签化日志**：**[New v1.3.2]** 使用标签集合过滤，支持精细化控制哪些信息显示在控制台或写入的文件。
+- 🎨 **彩色日志**：**[v1.3.2+]** 控制台中能根据不同类型（开播、推送、系统）分类彩色输出。
+- 🏷️ **标签化日志**：**[v1.3.2+]** 使用标签集合过滤，支持精细化控制哪些信息显示在控制台或写入的文件。
 - 🧹 **自动清理**：定时清理过期日志文件，保持磁盘整洁。
 - 🔄 **启动自检**：启动时可发送邮件或 Bark 测试信息，验证配置是否生效。
 
@@ -25,7 +25,7 @@
 # BiliLiveNotifier Configuration File
 # Created at: Sun Mar 29 14:20:32 HKT 2026
 
-liveIDs=123456,234567
+roomIDs=123456,234567
 apiUrl=https://api.live.bilibili.com/room/v1/Room/get_info?room_id=
 retryIntervalSeconds=30
 userInputTimeoutSeconds=5
@@ -35,6 +35,7 @@ log.maxHistoryDays=30
 email.enable=true
 email.list=example1@mail.com,example2@mail.com
 email.testOnStartup=true
+email.pushOnEnd=true
 smtp.host=smtp.qq.com
 smtp.port=465
 smtp.username=<smtp.username>
@@ -47,50 +48,49 @@ bark.pushOnEnd=true
 
 ## 📖 配置说明
 
-| **配置项**                   | **说明**                   |
-|---------------------------|--------------------------|
-| `liveIDs`                 | 监控的直播间 ID，多个用逗号分隔        |
-| `apiUrl`                  | B 站直播 API 地址             |
-| `retryIntervalSeconds`    | 轮询检查间隔（秒）                |
-| `userInputTimeoutSeconds` | 启动时跳过测试邮件的等待时间（秒）        |
-| `log.console.level`       | 控制台显示的日志标签               |
-| `log.file.level`          | 文件输出的日志标签                |
-| `log.toFile`              | 是否将日志输出到文件               |
-| `log.maxHistoryDays`      | 日志保留天数，过期的日志文件将被自动删除     |
-| `email.enable`            | 邮件推送总开关 (`true`/`false`) |
-| `email.list`              | 接收通知的邮箱地址，多个用逗号分隔        |
-| `email.testOnStartup`     | 启动时是否尝试发送测试邮件            |
-| `smtp.*`                  | 发件箱 SMTP 服务器及身份验证配置      |
-| `bark.enable`             | 是否启用 Bark 推送             |
-| `bark.url`                | Bark 推送的 API 地址（含 Key）   |
-| `bark.testOnStartup`      | 启动时是否尝试发送测试 Bark 通知      |
-| `bark.pushOnEnd`          | 下播时是否推送 Bark 通知          |
-
+| **配置项**                   | **说明**                         |
+|---------------------------|--------------------------------|
+| `liveIDs`                 | 监控的直播间 ID，多个用英文逗号分隔            |
+| `apiUrl`                  | B 站直播 API 地址                   |
+| `retryIntervalSeconds`    | 轮询检查间隔（秒）                      |
+| `userInputTimeoutSeconds` | 启动时跳过测试邮件的等待时间（秒）              |
+| `log.console.level`       | 控制台显示的日志标签                     |
+| `log.file.level`          | 文件输出的日志标签                      |
+| `log.toFile`              | 是否将日志输出到文件 (`true`/`false`，同下) |
+| `log.maxHistoryDays`      | 日志保留天数，过期的日志文件将被自动删除           |
+| `email.enable`            | 是否启用邮件推送                       |
+| `email.list`              | 接收通知的邮箱地址，多个用英文逗号分隔            |
+| `email.testOnStartup`     | 启动时是否尝试发送测试邮件                  |
+| `bark.pushOnEnd`          | 下播时是否推送邮件                      |
+| `smtp.*`                  | SMTP 服务器及身份验证配置                |
+| `bark.enable`             | 是否启用 Bark 推送                   |
+| `bark.url`                | Bark 推送的 API 地址（含 Key）         |
+| `bark.testOnStartup`      | 启动时是否尝试发送测试 Bark 通知            |
+| `bark.pushOnEnd`          | 下播时是否推送 Bark 通知                |
 
 ## 📌 日志标签说明 (v1.3.2+)
 
-不再使用 `INFO > WARN` 的优先级，而是通过标签名来匹配：
+不再使用 `INFO > WARN` 的优先级，而是通过标签名来匹配（括号中为显示的颜色）：
 
-- **`SYSTEM`**：程序启动、配置加载等。
-- **`CHECK`**：检查房间状态。
-- **`LIVE`**：开播、下播。
-- **`PUSH`**：推送行为。
-- **`WARN`**：非致命异常。
-- **`ERROR`**：致命错误。
+- **`SYSTEM`** (BLUE)：程序启动、配置加载等。
+- **`CHECK`** (DEFAULT)：检查房间状态。
+- **`LIVE`** (GREEN)：开播、下播。
+- **`PUSH`** (CYAN)：推送行为。
+- **`WARN`** (YELLOW)：非致命异常。
+- **`ERROR`** (RED)：致命错误。
 - **`ALL`**：开启所有标签。
 
 日志文件会以日期为文件名输出至当前目录下的 `logs` 文件夹，如`2026-03-29.log`。
 
 ## 💾 本地缓存与 API 说明
 
-^：本项目使用 **[UApiPro (uapis.cn)](https://uapis.cn/)** 获取主播头像和用户名。
+^：本项目使用 **[UApiPro (uapis.cn)](https://uapis.cn/)** 获取主播头像和用户名。（不是广告！）
 
 - **积分消耗**：约 4 积分/次。
-- **免费额度**：访客用户每月约 1500 积分（足够支持数百名主播的首次抓取）。
+- **免费额度**：访客用户每月约 1500 积分（完全足够支持数百名主播的首次抓取！）。
 
 为了提升载入速度并节省 API 积分，程序会自动创建 `user_cache.properties` 文件用于存储用户信息。  
 程序仅在缓存中找不到该 UID 的信息时，才会调用第三方接口。若主播更改了头像或昵称，程序**不会**实时同步。如需更新资料，**请手动删除该文件中对应的行后重启程序**。
-
 
 ## 🖥️ 运行方式
 
@@ -127,7 +127,7 @@ WantedBy=multi-user.target
 - **查看状态**: `systemctl status bln`  
 - **查看实时日志**: `journalctl -u bln -f`
 
-### Linux (后台运行)
+### Linux 后台运行
 
 ```bash
 nohup java -jar BiliLiveNotifier.jar &
@@ -135,7 +135,7 @@ nohup java -jar BiliLiveNotifier.jar &
 
 ### Windows
 
-直接运行 JAR 文件即可
+终端直接运行 JAR 文件即可
 
 ```cmd
 java -jar BiliLiveNotifier.jar
@@ -143,7 +143,7 @@ java -jar BiliLiveNotifier.jar
 
 ## 🧪 测试环境
 
-- **发送端**：Windows 11, Windows 10, fnOS 0.9.21
+- **发送端**：Windows 11, Windows 10, fnOS
 - **接收端**：iOS (Bark App), QQ 邮箱, Outlook 邮箱
 - **JDK**：Zulu 17, Zulu 21
 

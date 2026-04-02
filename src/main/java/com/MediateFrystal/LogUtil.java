@@ -1,13 +1,17 @@
 package com.MediateFrystal;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.stream.Stream;
+
 
 public class LogUtil {
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -32,7 +36,7 @@ public class LogUtil {
     private static final String PURPLE = "\u001B[35m";
 
     // 当前启用的标签集合
-    private static Set<Tag> consoleTags = EnumSet.of(Tag.SYSTEM, Tag.LIVE, Tag.ERROR);
+    private static Set<Tag> consoleTags = EnumSet.of(Tag.ALL);
     private static Set<Tag> fileTags = EnumSet.of(Tag.ALL);
 
     public static void setConsoleTags(String config) {
@@ -53,7 +57,7 @@ public class LogUtil {
             return set;
         } catch (Exception e) {
             System.err.println("日志配置解析失败，回退到默认设置: " + e.getMessage());
-            return EnumSet.of(Tag.SYSTEM, Tag.LIVE, Tag.PUSH, Tag.WARN, Tag.ERROR);
+            return EnumSet.of(Tag.ALL);
         }
     }
 
@@ -88,8 +92,8 @@ public class LogUtil {
     private static String getColorByTag(Tag tag) {
         return switch (tag) {
             case SYSTEM -> BLUE;
-            case LIVE -> GREEN;
             case CHECK -> RESET;
+            case LIVE -> GREEN;
             case PUSH -> CYAN;
             case WARN -> YELLOW;
             case ERROR -> RED;
@@ -98,13 +102,22 @@ public class LogUtil {
     }
 
     private static void writeToFile(String message) {
-        File logDir = new File(LOG_DIR);
-        if (!logDir.exists()) logDir.mkdirs();
-        String fileName = LOG_DIR + "/" + LocalDate.now().format(DateTimeFormatter.ISO_DATE) + ".log";
-        try (FileWriter fw = new FileWriter(fileName, true)) {
-            fw.write(message + System.lineSeparator());
+        try {
+            Path logDirPath = Paths.get(LOG_DIR);
+            Files.createDirectories(logDirPath);
+
+            String fileName = LocalDate.now().format(DateTimeFormatter.ISO_DATE) + ".log";
+            Path filePath = logDirPath.resolve(fileName);
+
+            Files.writeString(
+                    filePath,
+                    message + System.lineSeparator(),
+                    StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.APPEND
+            );
         } catch (IOException e) {
-            System.err.println("无法写入日志文件: " + e.getMessage());
+            err("无法写入日志文件: " + e.getMessage());
         }
     }
 
@@ -113,19 +126,37 @@ public class LogUtil {
      * @param daysBefore 保留多少天内的日志
      */
     public static void cleanOldLogs(int daysBefore) {
-        File logDir = new File(LOG_DIR);
-        if (!logDir.exists() || !logDir.isDirectory()) return;
+        Path logDirPath = Paths.get(LOG_DIR);
+        if (!Files.exists(logDirPath) || !Files.isDirectory(logDirPath)) return;
+        Instant threshold = Instant.now().minus(daysBefore, ChronoUnit.DAYS);
+        java.util.concurrent.atomic.AtomicInteger deleteCount = new java.util.concurrent.atomic.AtomicInteger(0);
 
-        File[] files = logDir.listFiles((dir, name) -> name.endsWith(".log"));
-        if (files == null) return;
-
-        long threshold = System.currentTimeMillis() - (daysBefore * 24L * 60 * 60 * 1000);
-        int deleteCount = 0;
-
-        for (File file : files) {
-            if (file.lastModified() < threshold && file.delete()) deleteCount++;
+        try (Stream<Path> files = Files.walk(logDirPath, 1)) {
+            files.filter(path -> path.toString().endsWith(".log"))
+                    .filter(path -> {
+                        try {
+                            return Files.getLastModifiedTime(path).toInstant().isBefore(threshold);
+                        } catch (IOException e) {
+                            return false;
+                        }
+                    })
+                    .forEach(path -> {
+                        try {
+                            if (Files.deleteIfExists(path)) {
+                                deleteCount.incrementAndGet();
+                            }
+                        } catch (IOException e) {
+                            err("删除文件失败: " + path + " -> " + e.getMessage());
+                        }
+                    });
+        } catch (IOException e) {
+            err("清理日志时发生错误: " + e.getMessage());
         }
 
-        if (deleteCount > 0) sys("日志清理完成，共删除 " + deleteCount + " 个过期日志文件。");
+        if (deleteCount.get() > 0) {
+            sys("日志清理完成，共删除 " + deleteCount.get() + " 个 " + daysBefore + " 天前的过期日志。");
+        } else {
+            sys("未发现超过 " + daysBefore + " 天的过期日志。");
+        }
     }
 }
