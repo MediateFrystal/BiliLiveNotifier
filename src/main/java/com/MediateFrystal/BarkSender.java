@@ -7,7 +7,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 public class BarkSender {
-    public static void send(String baseUrl, String title, String content, String roomId, String imageUrl, String iconUrl) {
+    public static void send(String baseUrl, String title, String content, String roomId, String imageUrl, String iconUrl, String group) {
         if (baseUrl == null || baseUrl.isEmpty()) return;
         try {
             StringBuilder urlBuilder = new StringBuilder(baseUrl);
@@ -16,6 +16,10 @@ public class BarkSender {
                     .append("/")
                     .append(URLEncoder.encode(content, StandardCharsets.UTF_8));
             urlBuilder.append("?level=timeSensitive");
+
+            // 通知分组：优先使用主播昵称，未获取到昵称时使用默认分组
+            String groupName = (group == null || group.isEmpty()) ? "default" : group;
+            urlBuilder.append("&group=").append(URLEncoder.encode(groupName, StandardCharsets.UTF_8));
 
             // 跳转直播间
             if (roomId != null) {
@@ -32,14 +36,18 @@ public class BarkSender {
 
             URL url = new URI(urlBuilder.toString()).toURL();
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setConnectTimeout(5000);
+            try {
+                conn.setRequestMethod("GET");
+                conn.setConnectTimeout(5000);
 
-            int code = conn.getResponseCode();
-            if (code == 200) {
-                LogUtil.push("Bark 推送成功: " + title);
-            } else {
-                LogUtil.err("Bark 推送失败，HTTP 响应码: " + code);
+                int code = conn.getResponseCode();
+                if (code == 200) {
+                    LogUtil.push("Bark 推送成功: " + title);
+                } else {
+                    LogUtil.err("Bark 推送失败，HTTP 响应码: " + code);
+                }
+            } finally {
+                conn.disconnect();
             }
         } catch (Exception e) {
             LogUtil.err("Bark 推送异常: " + e.getMessage());

@@ -57,6 +57,10 @@ public class EmailSender {
      * 发送正式邮件
      */
     public static void send(List<String> recipients, LiveData data, String userName, String userFace) throws GeneralSecurityException {
+        if (recipients == null || recipients.isEmpty()) {
+            throw new IllegalArgumentException("邮件收件人列表为空，请检查配置文件中的 email.list 配置。");
+        }
+
         Properties props = new Properties();
         props.put("mail.smtp.host", smtpHost);
         props.put("mail.smtp.port", smtpPort);

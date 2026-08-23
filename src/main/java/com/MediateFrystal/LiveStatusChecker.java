@@ -45,7 +45,7 @@ public class LiveStatusChecker {
 
     private static void streamStart(LiveData data, ConfigLoader config) {
         activeLives.put(data.getRoomID(), data);
-        CacheManager.UserInfo user = CacheManager.getOrFetchUser(data.getUid());
+        CacheManager.UserInfo user = CacheManager.getOrFetchUser(data.getRoomID(), data.getUid());
         data.setUserName(user.name());
 
         if (user.name().equals("未知主播")) {
@@ -75,22 +75,26 @@ public class LiveStatusChecker {
             // 构建请求 URL
             URL url = new URI(apiUrl + roomID).toURL();
             HttpURLConnection request = (HttpURLConnection) url.openConnection();
-            request.setRequestMethod("GET");
-            request.setConnectTimeout(5000);
-            request.setReadTimeout(5000);
-            request.connect();
+            try {
+                request.setRequestMethod("GET");
+                request.setConnectTimeout(5000);
+                request.setReadTimeout(5000);
+                request.connect();
 
-            // 将输入流转换为 JSON 对象
-            ObjectMapper mapper = new ObjectMapper();
-            try (InputStream response = request.getInputStream()) {
-                JsonNode root = mapper.readTree(response).path("data");
-                LiveData data = new LiveData();
-                data.setRoomID(roomID);
-                data.setLiveStatus(root.path("live_status").asInt());
-                data.setTitle(root.path("title").asText());
-                data.setUid(root.path("uid").asText());
-                data.setUserCover(root.path("user_cover").asText());
-                return data;
+                // 将输入流转换为 JSON 对象
+                ObjectMapper mapper = new ObjectMapper();
+                try (InputStream response = request.getInputStream()) {
+                    JsonNode root = mapper.readTree(response).path("data");
+                    LiveData data = new LiveData();
+                    data.setRoomID(roomID);
+                    data.setLiveStatus(root.path("live_status").asInt());
+                    data.setTitle(root.path("title").asText());
+                    data.setUid(root.path("uid").asText());
+                    data.setUserCover(root.path("user_cover").asText());
+                    return data;
+                }
+            } finally {
+                request.disconnect();
             }
 
         } catch (Exception e) {

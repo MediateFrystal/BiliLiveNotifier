@@ -9,6 +9,8 @@
 - 📡 **定时检测**：实时监控 B 站主播是否开播。
 - 📧 **邮件通知**：自动发送详细开播通知邮件（含封面图），支持多收件人。
 - 🔔 **Bark 推送**：支持 iOS Bark 推送（含时效性通知、点击跳转及头像和封面的展示）。
+- 👥 **分组推送**：**[v1.4.0]** 支持按分组配置，将不同直播间映射到不同的邮件/Bark 接收方，各分组独立控制推送开关与接收人。
+- 🗂️ **Bark 通知分组**：**[v1.4.0]** 推送时按主播昵称自动归组（URL 编码），Bark App 中通知展示更清爽。
 - 🖼️ **视觉增强**：通过第三方 API^，Bark 及邮件推送均可以显示主播头像和用户名。
 - 💾 **智能缓存**：主播信息仅在缺失时通过第三方 API 获取一次，缓存至本地，有效节省 API 使用量。
 - 📊 **时长统计**：下播时自动计算并记录本次直播时长。
@@ -25,48 +27,70 @@
 # BiliLiveNotifier Configuration File
 # Created at: Sun Mar 29 14:20:32 HKT 2026
 
-roomIDs=123456,234567
 apiUrl=https://api.live.bilibili.com/room/v1/Room/get_info?room_id=
 retryIntervalSeconds=30
 userInputTimeoutSeconds=5
 log.console.level=ALL
 log.file.level=SYSTEM,LIVE,PUSH,WARN,ERROR
 log.maxHistoryDays=30
-email.enable=true
-email.list=example1@mail.com,example2@mail.com
-email.testOnStartup=true
-email.pushOnEnd=true
 smtp.host=smtp.qq.com
 smtp.port=465
 smtp.username=<smtp.username>
 smtp.password=<smtp.password>
-bark.enable=false
-bark.url=https://api.day.app/your_key/
-bark.testOnStartup=true
-bark.pushOnEnd=true
+
+# ---- 分组配置：按房间划分独立的推送渠道与接收人（至少配置一个分组） ----
+group.1.rooms=123456,234567
+group.1.email.enable=true
+group.1.email.list=example1@mail.com,example2@mail.com
+group.1.email.testOnStartup=true
+group.1.email.pushOnEnd=true
+group.1.bark.enable=false
+group.1.bark.key=<bark.key>
+group.1.bark.testOnStartup=true
+group.1.bark.pushOnEnd=true
+
+# ---- 分组 2 示例（可选）：多数用户只需一个分组，多分组时取消注释并按需填写 ----
+# group.2.rooms=32562724
+# group.2.email.enable=false
+# group.2.email.list=user@example.com
+# group.2.email.testOnStartup=true
+# group.2.email.pushOnEnd=true
+# group.2.bark.enable=true
+# group.2.bark.key=KeyForGroup2
+# group.2.bark.testOnStartup=true
+# group.2.bark.pushOnEnd=true
 ```
 
 ## 📖 配置说明
 
+> **[v1.4.0]** 旧版全局推送配置（`roomIDs`、`email.*`、`bark.*`）已废弃，推送配置统一使用 `group.N.*` 分组格式。
+
+### 基础配置
+
 | **配置项**                   | **说明**                         |
 |---------------------------|--------------------------------|
-| `liveIDs`                 | 监控的直播间 ID，多个用英文逗号分隔            |
 | `apiUrl`                  | B 站直播 API 地址                   |
 | `retryIntervalSeconds`    | 轮询检查间隔（秒）                      |
 | `userInputTimeoutSeconds` | 启动时跳过测试邮件的等待时间（秒）              |
 | `log.console.level`       | 控制台显示的日志标签                     |
 | `log.file.level`          | 文件输出的日志标签                      |
-| `log.toFile`              | 是否将日志输出到文件 (`true`/`false`，同下) |
 | `log.maxHistoryDays`      | 日志保留天数，过期的日志文件将被自动删除           |
-| `email.enable`            | 是否启用邮件推送                       |
-| `email.list`              | 接收通知的邮箱地址，多个用英文逗号分隔            |
-| `email.testOnStartup`     | 启动时是否尝试发送测试邮件                  |
-| `bark.pushOnEnd`          | 下播时是否推送邮件                      |
 | `smtp.*`                  | SMTP 服务器及身份验证配置                |
-| `bark.enable`             | 是否启用 Bark 推送                   |
-| `bark.url`                | Bark 推送的 API 地址（含 Key）         |
-| `bark.testOnStartup`      | 启动时是否尝试发送测试 Bark 通知            |
-| `bark.pushOnEnd`          | 下播时是否推送 Bark 通知                |
+
+### 分组配置（`group.N.*`，N 为分组编号，从 1 开始）
+
+| **配置项**                     | **说明**                                        |
+|-----------------------------|-----------------------------------------------|
+| `group.N.rooms`             | 该分组监控的直播间 ID，多个用英文逗号分隔                       |
+| `group.N.email.enable`      | 该分组是否启用邮件推送                                 |
+| `group.N.email.list`        | 该分组的收件邮箱地址，多个用英文逗号分隔                        |
+| `group.N.email.testOnStartup` | 该分组启动时是否尝试发送测试邮件                          |
+| `group.N.email.pushOnEnd`   | 该分组下播时是否推送邮件                                |
+| `group.N.bark.enable`       | 该分组是否启用 Bark 推送                             |
+| `group.N.bark.key`          | 该分组的 Bark Key（自动拼接为 `https://api.day.app/{key}/`） |
+| `group.N.bark.url`          | （可选）自建 Bark 服务完整地址（含 Key），优先于 `bark.key`      |
+| `group.N.bark.testOnStartup`  | 该分组启动时是否尝试发送测试 Bark 通知                   |
+| `group.N.bark.pushOnEnd`    | 该分组下播时是否推送 Bark 通知                           |
 
 ## 📌 日志标签说明 (v1.3.2+)
 
@@ -90,7 +114,7 @@ bark.pushOnEnd=true
 - **免费额度**：访客用户每月约 1500 积分（完全足够支持数百名主播的首次抓取！）。
 
 为了提升载入速度并节省 API 积分，程序会自动创建 `user_cache.properties` 文件用于存储用户信息。  
-程序仅在缓存中找不到该 UID 的信息时，才会调用第三方接口。若主播更改了头像或昵称，程序**不会**实时同步。如需更新资料，**请手动删除该文件中对应的行后重启程序**。
+程序仅在缓存中找不到该房间（roomID）的信息时，才会调用第三方接口。**[v1.4.0]** 启动时会自动清理不再监控的房间缓存条目；若主播更改了头像或昵称，程序**不会**实时同步。如需更新资料，**请手动删除该文件中对应的行后重启程序**。
 
 ## 🖥️ 运行方式
 
